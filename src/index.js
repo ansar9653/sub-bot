@@ -25,8 +25,7 @@ async function handleUpdate(update, env) {
     }
 
     if (text.startsWith("http")) {
-      const waitMsg = await sendMessage(TOKEN, chatId, "⚙️ در حال استخراج کانفیگ‌ها... صبر کنید");
-
+      const waitMsg = await sendMessage(TOKEN, chatId, "⚙️ در حال استخراج... صبر کنید");
       const configs = await decodeSub(text);
 
       if (Array.isArray(configs) && configs.length > 0) {
@@ -39,16 +38,11 @@ async function handleUpdate(update, env) {
           const conf = configs[i];
           let remark = `Config ${i + 1}`;
           try {
-            if (conf.includes("#")) {
-              remark = decodeURIComponent(conf.split("#").pop());
-            }
-          } catch (e) {
-            remark = conf.split("#").pop() || `Config ${i + 1}`;
-          }
+            if (conf.includes("#")) remark = decodeURIComponent(conf.split("#").pop());
+          } catch (e) { remark = conf.split("#").pop() || `Config ${i + 1}`; }
 
           const shortRemark = remark.length > 18 ? remark.substring(0, 18) + ".." : remark;
           const icon = getProtocolIcon(conf);
-
           buttons.push([{ text: `${icon} | ${shortRemark}`, callback_data: `conf_${i}` }]);
         }
 
@@ -76,32 +70,22 @@ async function handleUpdate(update, env) {
         if (configs[idx]) {
           await sendMessage(TOKEN, chatId, `<code>${escapeHtml(configs[idx])}</code>`, {}, "HTML");
           await answerCallback(TOKEN, callbackId, "✅ ارسال شد");
-        } else {
-          await answerCallback(TOKEN, callbackId, "❌ یافت نشد");
-        }
-      } else {
-        await answerCallback(TOKEN, callbackId, "⏰ منقضی شده، دوباره لینک بفرست");
-      }
+        } else { await answerCallback(TOKEN, callbackId, "❌ یافت نشد"); }
+      } else { await answerCallback(TOKEN, callbackId, "⏰ منقضی شده، دوباره لینک بفرست"); }
     }
   }
 }
 
 async function decodeSub(url) {
   try {
-    const response = await fetch(url.trim(), {
-      headers: { "User-Agent": "v2rayNG/1.8.5" },
-    });
+    const response = await fetch(url.trim(), { headers: { "User-Agent": "v2rayNG/1.8.5" } });
     let content = await response.text();
     content = content.trim();
-
     const missingPadding = content.length % 4;
     if (missingPadding) content += "=".repeat(4 - missingPadding);
-
     const decoded = atob(content);
     return decoded.split("\n").filter((line) => line.trim());
-  } catch (e) {
-    return `خطا: ${e.message}`;
-  }
+  } catch (e) { return `خطا: ${e.message}`; }
 }
 
 function getProtocolIcon(config) {
@@ -122,33 +106,28 @@ async function sendMessage(token, chatId, text, extra = {}, parseMode = "") {
   const body = { chat_id: chatId, text: text, ...extra };
   if (parseMode) body.parse_mode = parseMode;
   const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
   });
   return res.json();
 }
 
 async function editMessage(token, chatId, messageId, text) {
   await fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ chat_id: chatId, message_id: messageId, text: text }),
   });
 }
 
 async function deleteMessage(token, chatId, messageId) {
   await fetch(`https://api.telegram.org/bot${token}/deleteMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ chat_id: chatId, message_id: messageId }),
   });
 }
 
 async function answerCallback(token, callbackId, text) {
   await fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ callback_query_id: callbackId, text: text, show_alert: false }),
   });
 }
